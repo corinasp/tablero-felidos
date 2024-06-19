@@ -1,0 +1,104 @@
+---
+title: "Tablero de ejemplo"
+format: 
+  dashboard:
+     orientation: columns
+---
+
+```{r}
+#| label: carga-paquetes
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(sf)
+library(DT)
+library(terra)
+library(plotly)
+library(leaflet)
+library(leaflet.extras)
+library(leafem)
+```
+
+```{r}
+#| label: carga-datos
+
+felidos <-
+  st_read(
+    "felidos.csv",
+    options = c(
+      "X_POSSIBLE_NAMES=decimalLongitude", 
+      "Y_POSSIBLE_NAMES=decimalLatitude"),
+    quiet = TRUE
+  )
+
+st_crs(felidos) <- 4326
+```
+
+## row {width=50%}
+```{r}
+#| label: mapa
+#| title: "Mapa de distribución"
+
+leaflet() |>
+  setView(
+    lng = -84,
+    lat = 10,
+    zoom = 7
+  ) |>
+  addTiles(group = "OSM") |>
+  addProviderTiles(provider = providers$Esri.WorldImagery, group = "Imágenes satélitales") |>
+  addCircleMarkers(
+    data = felidos,
+    color = "black",
+    fillColor = "red",
+    radius = 4,
+    stroke = FALSE,
+    group = "Félidos"
+  ) |>
+  addLayersControl(
+    baseGroups = c("OSM", "Imágenes satélitales")
+  )
+```
+
+## row {width=50%}
+```{r}
+#| label: tabla
+#| title: "Lista de registros de presencia"
+
+felidos |>
+  select(species, decimalLongitude, decimalLatitude, stateProvince) |>
+  datatable()
+```
+
+```{r}
+#| label: grafico
+#| title: "Cantidad de registros por provincia"
+
+grafico_ggplot2 <-
+felidos |>
+  st_drop_geometry() |>
+  filter(stateProvince == "San José" | stateProvince == " Alajuela" | stateProvince == "Cartago" | stateProvince == "Limón") |>
+  group_by(stateProvince) |>
+  summarise(n = n()) |>
+  ggplot(aes(
+    x = stateProvince,
+    y = n)) +
+   geom_col()
+  
+ggplotly(grafico_ggplot2) |> config(locale = "es")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
